@@ -12,9 +12,7 @@ RUN a2enmod rewrite
 
 COPY . /var/www/html/
 
-RUN echo "Listen \${PORT:-80}" > /etc/apache2/ports.conf
-RUN sed -i 's/<VirtualHost \*:80>/<VirtualHost *:\${PORT:-80}>/g' /etc/apache2/sites-available/000-default.conf
-
-EXPOSE 80
-
-CMD echo "const SUPABASE_URL = '${SUPABASE_URL}'; const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';" > /var/www/html/Public/js/config.js && apache2-foreground
+CMD echo "const SUPABASE_URL = '${SUPABASE_URL}'; const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';" > /var/www/html/Public/js/config.js && \
+    echo "Listen ${PORT:-80}" > /etc/apache2/ports.conf && \
+    sed -i "s/<VirtualHost \*:.*/<VirtualHost \*:${PORT:-80}>/g" /etc/apache2/sites-available/000-default.conf && \
+    apache2-foreground
