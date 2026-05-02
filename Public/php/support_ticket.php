@@ -19,23 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$autoload = __DIR__ . '/../../vendor/autoload.php';
-if (!file_exists($autoload)) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Vendor not found. Run composer install.']);
-    exit;
-}
-
-try {
-    require_once $autoload;
-    require_once __DIR__ . '/bootstrap.php';
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Bootstrap failed: ' . $e->getMessage()]);
-    exit;
-}
-
-use App\Models\SupportTicket;
+require_once __DIR__ . '/SupabaseClient.php';
 
 $body = json_decode(file_get_contents('php://input'), true);
 
@@ -55,7 +39,12 @@ foreach ($required as $field) {
 }
 
 try {
-    $ticket = SupportTicket::create([
+    $supabase = new SupabaseClient(
+        getenv('SUPABASE_URL'),
+        getenv('SUPABASE_ANON_KEY')
+    );
+
+    $ticket = $supabase->insert('support_tickets', [
         'full_name' => trim($body['full_name']),
         'ruc'       => trim($body['ruc']),
         'email'     => trim($body['email']),
@@ -66,8 +55,8 @@ try {
     ]);
 
     http_response_code(201);
-    echo json_encode(['success' => true, 'id' => $ticket->id]);
+    echo json_encode(['success' => true, 'id' => $ticket['id'] ?? null]);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['error' => $e->getMessage()]);
 }
